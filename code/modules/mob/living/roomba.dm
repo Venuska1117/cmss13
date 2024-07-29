@@ -17,6 +17,7 @@
 
 /mob/living/roomba/Initialize(mapload, ...)
 	. = ..()
+	SSmob.living_misc_mobs += src //this shit cost 3 days to find, its responsible for listing living to Life()
 	src.get_vaccum_targets()
 	src.get_mopping_targets()
 	give_action(src, /datum/action/vaccum_toggle)
@@ -105,7 +106,8 @@
 
 /mob/living/roomba/Life()
 	if(health <= 0)
-		death()
+		death(deathmessage = "sizzles and start melting inside of chemical puddle.")
+		gib()
 	. = ..()
 
 /mob/living/roomba/spawn_gibs()
