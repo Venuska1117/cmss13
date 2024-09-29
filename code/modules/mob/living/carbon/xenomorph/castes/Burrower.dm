@@ -14,6 +14,10 @@
 	evasion = XENO_EVASION_NONE
 	speed = XENO_SPEED_TIER_4
 
+	available_strains = list(
+		/datum/xeno_strain/mole,
+	)
+
 	deevolves_to = list(XENO_CASTE_DRONE)
 	caste_desc = "A digger and trapper."
 	acid_level = 2

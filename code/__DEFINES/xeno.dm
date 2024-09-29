@@ -381,6 +381,9 @@
 // Carrier strain flags
 #define CARRIER_EGGSAC "Eggsac"
 
+// Burrrower strain flags
+#define BURROWER_MOLE "Mole"
+
 // Boiler strain flags
 #define BOILER_TRAPPER "Trapper"
 
