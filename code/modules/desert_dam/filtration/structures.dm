@@ -165,13 +165,8 @@
 	return
 
 /obj/structure/filtration/machine_32x64
-<<<<<<< HEAD
-	icon = 'icons/obj/structures/props/32x64.dmi'
-	density = FALSE
-=======
 	icon = 'icons/obj/structures/props/industrial/32x64.dmi'
 	density = TRUE
->>>>>>> 467102bd3f74aaffa2538c090ecd34be446c12c1
 	anchored = TRUE
 	bound_width = 32
 	bound_height = 64
