@@ -11,6 +11,9 @@
 	temperature = 308.7 //kelvin, 35c, 95f
 	minimap_color = MINIMAP_AREA_ENGI
 
+<<<<<<< HEAD
+//---===| Essential Areas |===---
+=======
 /area/shuttle/drop1/kutjevo
 	name = "Kutjevo - Dropship Alamo Landing Zone"
 	icon_state = "shuttle"
@@ -22,12 +25,12 @@
 	icon_state = "shuttle2"
 	icon = 'icons/turf/area_kutjevo.dmi'
 	linked_lz = DROPSHIP_LZ2
+>>>>>>> 467102bd3f74aaffa2538c090ecd34be446c12c1
 
 /area/kutjevo/exterior
 	name = "Kutjevo - Exterior"
 	ceiling = CEILING_NONE
 	icon_state = "ext"
-
 
 /area/kutjevo/interior
 	name = "Kutjevo - Interior"
@@ -46,7 +49,17 @@
 	name = "Kutjevo - Credits Room"
 	icon_state = "kutjevo"
 
-//exterior map areas
+//---=== Landing Zones ===---
+
+/area/shuttle/drop1/kutjevo
+	name = "Kutjevo - Dropship Alamo Landing Zone"
+	icon_state = "shuttle"
+	icon = 'icons/turf/area_kutjevo.dmi'
+
+/area/shuttle/drop2/kutjevo
+	name = "Kutjevo - Dropship Normandy Landing Zone"
+	icon_state = "shuttle2"
+	icon = 'icons/turf/area_kutjevo.dmi'
 
 /area/kutjevo/exterior/lz_pad
 	name = "Kutjevo Auxilliary Landing Zone"
@@ -64,6 +77,8 @@
 	is_landing_zone = TRUE
 	linked_lz = DROPSHIP_LZ1
 
+//---=== Exterior Areas ===---
+
 /area/kutjevo/exterior/lz_river
 	name = "Kutjevo - Power Station River"
 	icon_state = "lz_river"
@@ -75,6 +90,21 @@
 	unoviable_timer = FALSE
 
 /area/kutjevo/exterior/scrubland
+<<<<<<< HEAD
+	name = "Do not use."
+
+/area/kutjevo/exterior/scrubland/north
+	name = "Kutjevo - North Scrubland"
+	icon_state = "scrubland1"
+
+/area/kutjevo/exterior/scrubland/center
+	name = "Kutjevo - Center Scrubland"
+	icon_state = "scrubland2"
+
+/area/kutjevo/exterior/scrubland/south
+	name = "Kutjevo - South Scrubland"
+	icon_state = "scrubland3"
+=======
 	name = "Kutjevo - North Scrubland"
 	icon_state = "scrubland"
 	linked_lz = DROPSHIP_LZ2
@@ -82,6 +112,7 @@
 /area/kutjevo/exterior/scrubland/south
 	name = "Kutjevo - South Scrubland"
 	linked_lz = list(DROPSHIP_LZ1, DROPSHIP_LZ2)
+>>>>>>> 467102bd3f74aaffa2538c090ecd34be446c12c1
 
 /area/kutjevo/exterior/stonyfields
 	name = "Kutjevo - Stony Fields"
