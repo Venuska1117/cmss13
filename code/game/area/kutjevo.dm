@@ -11,6 +11,8 @@
 	temperature = 308.7 //kelvin, 35c, 95f
 	minimap_color = MINIMAP_AREA_ENGI
 
+//---===| Essential Areas |===---
+
 /area/shuttle/drop1/kutjevo
 	name = "Kutjevo - Dropship Alamo Landing Zone"
 	icon_state = "shuttle"
@@ -27,7 +29,6 @@
 	name = "Kutjevo - Exterior"
 	ceiling = CEILING_NONE
 	icon_state = "ext"
-
 
 /area/kutjevo/interior
 	name = "Kutjevo - Interior"
@@ -47,7 +48,17 @@
 	name = "Kutjevo - Credits Room"
 	icon_state = "kutjevo"
 
-//exterior map areas
+//---=== Landing Zones ===---
+
+/area/shuttle/drop1/kutjevo
+	name = "Kutjevo - Dropship Alamo Landing Zone"
+	icon_state = "shuttle"
+	icon = 'icons/turf/area_kutjevo.dmi'
+
+/area/shuttle/drop2/kutjevo
+	name = "Kutjevo - Dropship Normandy Landing Zone"
+	icon_state = "shuttle2"
+	icon = 'icons/turf/area_kutjevo.dmi'
 
 /area/kutjevo/exterior/lz_pad
 	name = "Kutjevo Auxilliary Landing Zone"
@@ -65,6 +76,8 @@
 	is_landing_zone = TRUE
 	linked_lz = DROPSHIP_LZ1
 
+//---=== Exterior Areas ===---
+
 /area/kutjevo/exterior/lz_river
 	name = "Kutjevo - Power Station River"
 	icon_state = "lz_river"
@@ -76,13 +89,22 @@
 	unoviable_timer = FALSE
 
 /area/kutjevo/exterior/scrubland
+	name = "Do not use."
+
+/area/kutjevo/exterior/scrubland/north
 	name = "Kutjevo - North Scrubland"
-	icon_state = "scrubland"
+	icon_state = "scrubland1"
+
+
+/area/kutjevo/exterior/scrubland/center
+	name = "Kutjevo - Center Scrubland"
+	icon_state = "scrubland2"
 	linked_lz = DROPSHIP_LZ2
 
 /area/kutjevo/exterior/scrubland/south
 	name = "Kutjevo - South Scrubland"
-	linked_lz = list(DROPSHIP_LZ1, DROPSHIP_LZ2)
+	icon_state = "scrubland3"
+	linked_lz = DROPSHIP_LZ1
 
 /area/kutjevo/exterior/stonyfields
 	name = "Kutjevo - Stony Fields"
@@ -123,10 +145,6 @@
 /area/kutjevo/exterior/complex_border
 	name = "Kutjevo Complex - Exterior"
 	icon_state = "kutjevo"
-
-/area/kutjevo/exterior/complex_border/botany_medical_cave
-	name = "Kutjevo Complex - Botany - Medical Cave"
-	icon_state = "med_ext"
 
 /area/kutjevo/exterior/complex_border/med_park
 	name = "Kutjevo Complex - Medical Park"
@@ -170,7 +188,7 @@
 /area/kutjevo/interior/complex/botany
 	name = "Kutjevo Complex - Botany Bay"
 	icon_state = "botany0"
-	minimap_color = MINIMAP_AREA_RESEARCH
+	minimap_color = MINIMAP_AREA_MEDBAY_CAVE
 
 /area/kutjevo/interior/complex/botany/east
 	name = "Kutjevo Complex - Botany East Hall"
@@ -194,7 +212,7 @@
 	icon_state = "med2"
 
 /area/kutjevo/interior/complex/med/operating
-	name = "Kutjevo Complex - Medical Operation Hallway"
+	name = "Kutjevo Complex - Medical Operation Wing"
 	icon_state = "med3"
 
 /area/kutjevo/interior/complex/med/triage
@@ -302,46 +320,41 @@
 
 /area/kutjevo/interior/colony_north
 	name = "Kutjevo - North Colony Caves"
-	ceiling = CEILING_UNDERGROUND_BLOCK_CAS
+	ceiling = CEILING_DEEP_UNDERGROUND
 	icon_state = "colony_caves_1"
 	unoviable_timer = FALSE
 
-/area/kutjevo/interior/colony_southeast
-	name = "Kutjevo - Southeast Colony Caves"
-	ceiling = CEILING_UNDERGROUND_BLOCK_CAS
+/area/kutjevo/interior/colony_S_East
+	name = "Kutjevo - North East Colony Caves"
+	ceiling = CEILING_DEEP_UNDERGROUND
 	icon_state = "colony_caves_2"
 	unoviable_timer = FALSE
 
-/area/kutjevo/interior/colony_northeast
-	name = "Kutjevo - Northeast Colony Caves"
-	ceiling = CEILING_UNDERGROUND_BLOCK_CAS
+/area/kutjevo/interior/colony_N_East
+	name = "Kutjevo - South East Colony Caves"
+	ceiling = CEILING_DEEP_UNDERGROUND
 	icon_state = "colony_caves_2"
 	unoviable_timer = FALSE
 
-/area/kutjevo/interior/colony_south
+/area/kutjevo/interior/colony_South
 	name = "Kutjevo - South Colony Caves"
-	ceiling = CEILING_UNDERGROUND_BLOCK_CAS
+	ceiling = CEILING_DEEP_UNDERGROUND
 	icon_state = "colony_caves_3"
 
-/area/kutjevo/interior/colony_south/power2
+/area/kutjevo/interior/colony_South/power2
 	name = "Kutjevo - South Colony Treatment Plant"
-	ceiling = CEILING_UNDERGROUND_BLOCK_CAS
+	ceiling = CEILING_DEEP_UNDERGROUND
 	icon_state = "colony_caves_3"
 	minimap_color = MINIMAP_AREA_ENGI_CAVE
 	unoviable_timer = FALSE
 
-//CLF insert areas
-/area/kutjevo/interior/colony/landing_zone_checkpoint
-	name = "Kutjevo - Landing Zone Checkpoint"
-	ceiling = CEILING_UNDERGROUND_METAL_ALLOW_CAS
-	icon_state = "colony_int"
+/area/kutjevo/interior/research
+	name = "Kutjevo - Plant Research Facility"
+	ceiling = CEILING_DEEP_UNDERGROUND
+	icon_state = "weed_int"
+	minimap_color = MINIMAP_AREA_RESEARCH
 
-/area/kutjevo/interior/colony/clf_shuttle
-	name = "Kutjevo - Unregistered Freighter"
-	ceiling = CEILING_UNDERGROUND_METAL_ALLOW_CAS
-	icon_state = "colony_int"
-
-/area/kutjevo/exterior/clf_lz
-	name = "Kutjevo - Tertiary Landing Zone"
-	ceiling = CEILING_NONE
-	icon_state = "ext"
+/area/kutjevo/interior/research/secret_room
+	name = "Kutjevo - Plant Research Facility Secret Room"
+	icon_state = "weed_ext"
+	minimap_color = MINIMAP_AREA_RESEARCH_CAVE
