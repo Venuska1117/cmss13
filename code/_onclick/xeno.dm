@@ -2,56 +2,63 @@
 	Xenomorph
 */
 
-/mob/living/carbon/xenomorph/UnarmedAttack(atom/target, proximity, click_parameters, tile_attack = FALSE, ignores_resin = FALSE)
+/mob/living/carbon/xenomorph/UnarmedAttack(atom/target_atom, proximity, click_parameters, tile_attack = FALSE, ignores_resin = FALSE)
 	if(body_position == LYING_DOWN || HAS_TRAIT(src, TRAIT_ABILITY_BURROWED) || cannot_slash) //No attacks while laying down
 		return FALSE
 	var/mob/alt
 
-	if(target == src) //Clicking self.
-		target = params2turf(click_parameters[SCREEN_LOC], get_turf(src), client)
+	if(target_atom == src) //Clicking self.
+		target_atom = params2turf(click_parameters[SCREEN_LOC], get_turf(src), client)
 		tile_attack = TRUE
 
-	if(target.z != z)
+	if(target_atom.z != z)
 		return
 
-	if(isturf(target) && tile_attack) //Attacks on turfs must be done indirectly through directional attacks or clicking own sprite.
-		var/turf/T = target
+	if(isturf(target_atom) && tile_attack) //Attacks on turfs must be done indirectly through directional attacks or clicking own sprite.
+		var/turf/target_turf = target_atom
 		var/mob/living/non_xeno_target
-		for(var/mob/living/L in T)
-			if (!iscarbon(L))
-				if (!alt)
-					alt = L // last option is a simple mob
+		var/mob/living/is_xeno_target
+		for(var/mob/living/target_living in target_turf)
+			if(!iscarbon(target_living))
+				if(!alt)
+					alt = target_living // last option is a simple mob
 				continue
-			if(HAS_TRAIT(L, TRAIT_NESTED))
+			if(HAS_TRAIT(target_living, TRAIT_NESTED))
 				continue
 
-			if (!L.is_xeno_grabbable() || L == src) //Xenos never attack themselves.
+			if(!target_living.is_xeno_grabbable() || target_living == src) //Xenos never attack themselves.
 				continue
-			var/isxeno = isxeno(L)
+			var/isxeno = isxeno(target_living)
 			if(!isxeno)
-				non_xeno_target = L
-			if (L.body_position == LYING_DOWN)
-				alt = L
+				non_xeno_target = target_living
+			if(isxeno)
+				if(target_living.health <= 0 && target_living.stat != DEAD)
+					is_xeno_target = target_living
+					continue
+			if(target_living.body_position == LYING_DOWN)
+				alt = target_living
 				continue
-			else if (!isxeno)
+			else if(!isxeno)
 				break
-			target = L
-		if (target == T && alt)
-			target = alt
+			target_atom = target_living
+		if(target_atom == target_turf && alt)
+			target_atom = alt
 		if(non_xeno_target)
-			target = non_xeno_target
-		if (T && ignores_resin) // Will not target resin walls and doors if this is set to true. This is normally only set to true through a directional attack.
-			if(istype(T, /obj/structure/mineral_door/resin))
-				var/obj/structure/mineral_door/resin/attacked_door = T
+			target_atom = non_xeno_target
+		if(is_xeno_target)
+			target_atom = is_xeno_target
+		if(target_turf && ignores_resin) // Will not target_atom resin walls and doors if this is set to true. This is normally only set to true through a directional attack.
+			if(istype(target_turf, /obj/structure/mineral_door/resin))
+				var/obj/structure/mineral_door/resin/attacked_door = target_turf
 				if(hivenumber == attacked_door.hivenumber)
 					return FALSE
-			if(istype(T, /turf/closed/wall/resin))
-				var/turf/closed/wall/resin/attacked_wall = T
+			if(istype(target_turf, /turf/closed/wall/resin))
+				var/turf/closed/wall/resin/attacked_wall = target_turf
 				if(hivenumber == attacked_wall.hivenumber)
 					return FALSE
 
-	target = target.handle_barriers(src, , (PASS_MOB_THRU_XENO|PASS_TYPE_CRAWLER)) // Checks if target will be attacked by the current alien OR if the blocker will be attacked
-	switch(target.attack_alien(src))
+	target_atom = target_atom.handle_barriers(src, , (PASS_MOB_THRU_XENO|PASS_TYPE_CRAWLER)) // Checks if target_atom will be attacked by the current alien OR if the blocker will be attacked
+	switch(target_atom.attack_alien(src))
 		if(XENO_ATTACK_ACTION)
 			xeno_attack_delay(src)
 		if(XENO_NONCOMBAT_ACTION)
@@ -63,7 +70,7 @@
 				var/firepatted = FALSE
 				if(src.a_intent == INTENT_HELP)
 					var/fire_level_to_extinguish = 5
-					var/turf/target_turf = target
+					var/turf/target_turf = target_atom
 					for(var/obj/flamer_fire/fire in target_turf)
 						firepatted = TRUE
 						var/penetrating = fire.tied_reagent?.fire_penetrating && !(fire_immunity & FIRE_IMMUNITY_IGNORE_PEN)
@@ -85,14 +92,14 @@
 								else
 									qdel(fire)
 				xeno_miss_delay(src)
-				animation_attack_on(target)
+				animation_attack_on(target_atom)
 				playsound(loc, 'sound/weapons/alien_claw_swipe.ogg', 10, 1) //Quiet to limit spam/nuisance.
 				if(firepatted)
 					src.visible_message(SPAN_DANGER("\The [src] pats at the fire!"),
 					SPAN_DANGER("We pat the fire!"), null, 5, CHAT_TYPE_XENO_COMBAT)
 				else
-					src.visible_message(SPAN_DANGER("\The [src] swipes at \the [target]!"),
-					SPAN_DANGER("We swipe at \the [target]!"), null, 5, CHAT_TYPE_XENO_COMBAT)
+					src.visible_message(SPAN_DANGER("\The [src] swipes at \the [target_atom]!"),
+					SPAN_DANGER("We swipe at \the [target_atom]!"), null, 5, CHAT_TYPE_XENO_COMBAT)
 	return TRUE
 
 /mob/living/carbon/xenomorph/RangedAttack(atom/A)
@@ -100,7 +107,7 @@
 	if (.)
 		return
 	if (client && client.prefs && client.prefs.toggle_prefs & TOGGLE_DIRECTIONAL_ATTACK)
-		next_move += 0.25 SECONDS //Slight delay on missed directional attacks. If it finds a mob in the target tile, this will be overwritten by the attack delay.
+		next_move += 0.25 SECONDS //Slight delay on missed directional attacks. If it finds a mob in the target_atom tile, this will be overwritten by the attack delay.
 		return UnarmedAttack(get_step(src, Get_Compass_Dir(src, A)), tile_attack = TRUE, ignores_resin = TRUE)
 	return FALSE
 
@@ -115,9 +122,9 @@ so that it doesn't double up on the delays) so that it applies the delay immedia
 /atom/proc/attack_alien(mob/user as mob)
 	return
 
-/mob/living/carbon/xenomorph/click(atom/target, list/mods)
+/mob/living/carbon/xenomorph/click(atom/target_atom, list/mods)
 	if(queued_action)
-		handle_queued_action(target)
+		handle_queued_action(target_atom)
 		return TRUE
 
 	var/left_pressed = mods[LEFT_CLICK] == "1"
@@ -127,8 +134,8 @@ so that it doesn't double up on the delays) so that it applies the delay immedia
 	var/right_pressed = mods[RIGHT_CLICK] == "1"
 
 	if(alt_pressed && shift_pressed)
-		if(istype(target, /mob/living/carbon/xenomorph))
-			var/mob/living/carbon/xenomorph/xeno = target
+		if(istype(target_atom, /mob/living/carbon/xenomorph))
+			var/mob/living/carbon/xenomorph/xeno = target_atom
 			if(!QDELETED(xeno) && xeno.stat != DEAD && !should_block_game_interaction(xeno) && xeno.check_state(TRUE) && xeno.hivenumber == hivenumber)
 				overwatch(xeno)
 				next_move = world.time + 3 // Some minimal delay so this isn't crazy spammy
@@ -145,12 +152,12 @@ so that it doesn't double up on the delays) so that it applies the delay immedia
 			activate_ability = left_pressed && shift_pressed
 
 	if(activate_ability && selected_ability)
-		if(istype(target, /atom/movable/screen))
+		if(istype(target_atom, /atom/movable/screen))
 			// Click through the UI: Currently this won't attempt to sprite click any mob there, just the turf
 			var/turf/turf = params2turf(mods[SCREEN_LOC], get_turf(client.get_eye()), client)
 			if(turf)
-				target = turf
-		selected_ability.use_ability_wrapper(target, mods)
+				target_atom = turf
+		selected_ability.use_ability_wrapper(target_atom, mods)
 		return TRUE
 
 	if(next_move >= world.time)
