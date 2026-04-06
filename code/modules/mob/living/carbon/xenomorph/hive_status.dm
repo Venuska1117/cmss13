@@ -31,7 +31,7 @@
 	/// Assoc list of free slots available to specific castes
 	var/list/free_slots = list(
 		/datum/caste_datum/burrower = 1,
-		/datum/caste_datum/hivelord = 1,
+		/datum/caste_datum/hivelord = 2,
 		/datum/caste_datum/carrier = 1
 	)
 	/// Assoc list of slots currently used by specific castes (for calculating free_slot usage)
