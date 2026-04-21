@@ -332,8 +332,10 @@
 	var/enclosed_plates = FALSE
 	/// Check if plate slam is active.
 	var/plate_slam = FALSE
+	/// Shield slam addtimer ID (for deletion)
+	var/shield_slam_timer_id = TIMER_ID_NULL
 	/// Chain xeno player to target under plate slam ability.
-	var/mob/living/carbon/plasma_channel_target = null
+	var/mob/living/carbon/plate_slam_target = null
 	/// Time spent channeling plasma.
 	var/plasma_channel_elapsed = 0
 	/// Maximum time channeling plasma can be active.
