@@ -35,7 +35,7 @@
 
 #define SHIELDER_FRONT_ARMOR 10
 #define SHIELDER_SIDE_ARMOR 5
-#define SHIELDER_GRENADE_SWEEP 3
+#define SHIELDER_GRENADE_SWEEP 2
 #define SHIELDER_REFLECTION_DURATION 10 SECONDS
 #define SHIELDER_REFLECTION_BASE_CHANCE 80
 #define SHIELDER_SIDE_REFLECTION_PROCENTAGE 0.8
@@ -226,7 +226,7 @@
 	for(var/obj/item/explosive/grenade/grenade in orange(swing_range, get_turf(xeno_player)))
 		hit_grenade = TRUE
 		var/direction = get_dir(xeno_player, grenade)
-		var/turf/target_destination = get_ranged_target_turf(grenade, direction, 3)
+		var/turf/target_destination = get_ranged_target_turf(grenade, direction, SHIELDER_GRENADE_SWEEP)
 		if(target_destination)
 			grenade.throw_atom(target_destination, SHIELDER_GRENADE_SWEEP, SPEED_FAST, grenade)
 			playsound(xeno_player,'sound/effects/grenade_hit.ogg', 50, 1)
