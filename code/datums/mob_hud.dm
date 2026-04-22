@@ -204,13 +204,7 @@ GLOBAL_LIST_INIT_TYPED(huds, /datum/mob_hud, flatten_numeric_alist(alist(
 /datum/mob_hud/xeno/xeno_hive_tutorial
 
 /datum/mob_hud/xeno_hostile
-	hud_icons = list(
-	XENO_HOSTILE_ACID,
-	XENO_HOSTILE_SLOW,
-	XENO_HOSTILE_TAG,
-	XENO_HOSTILE_FREEZE,
-	XENO_HOSTILE_FLOORED
-	)
+	hud_icons = list(XENO_HOSTILE_ACID, XENO_HOSTILE_SLOW, XENO_HOSTILE_TAG, XENO_HOSTILE_FREEZE, XENO_HOSTILE_FLOORED)
 
 /datum/mob_hud/execute_hud
 	hud_icons = list(XENO_EXECUTE)
