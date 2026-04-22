@@ -30,11 +30,6 @@
 	/// Should the ability trigger an acid overlay for their respective caste upon action selection and deselection.
 	var/ability_uses_acid_overlay = FALSE
 
-	//Shielder content
-	var/plasma_channel_timer = null
-	var/plasma_channel_tick = 1 SECONDS
-	var/plasma_channel_max_duration = 10 SECONDS
-
 /datum/action/xeno_action/New(Target, override_icon_state)
 	. = ..()
 	if(charges != NO_ACTION_CHARGES)
