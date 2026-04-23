@@ -1030,7 +1030,7 @@
 	if(!istype(target_turf))
 		return
 
-	if(locate(/obj/effect/xenomorph/boiler_bombard) in turf)
+	if(locate(/obj/effect/xenomorph/boiler_bombard) in target_turf)
 		return
 
 	new effect_type(target_turf, xeno)
