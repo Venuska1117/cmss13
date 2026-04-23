@@ -20,71 +20,71 @@
 	/// Whether this construction gets more expensive the more saturated the area is
 	var/scaling_cost = FALSE
 
-/datum/resin_construction/proc/can_build_here(turf/T, mob/living/carbon/xenomorph/X)
-	var/mob/living/carbon/xenomorph/blocker = locate() in T
-	if(blocker && blocker != X && blocker.stat != DEAD)
-		to_chat(X, SPAN_WARNING("Can't do that with [blocker] in the way!"))
+/datum/resin_construction/proc/can_build_here(turf/target_turf, mob/living/carbon/xenomorph/xeno)
+	var/mob/living/carbon/xenomorph/blocker = locate() in target_turf
+	if(blocker && blocker != xeno && blocker.stat != DEAD)
+		to_chat(xeno, SPAN_WARNING("Can't do that with [blocker] in the way!"))
 		return FALSE
 
-	if(!istype(T))
+	if(!istype(target_turf))
 		return FALSE
 
-	if(T.is_weedable < FULLY_WEEDABLE)
+	if(target_turf.is_weedable < FULLY_WEEDABLE)
 		var/has_node = FALSE
-		for(var/obj/effect/alien/resin/design/node in T)
+		for(var/obj/effect/alien/resin/design/node in target_turf)
 			has_node = TRUE
 			break
 
 		if(!has_node)
-			to_chat(X, SPAN_WARNING("You can't do that here without design nodes."))
+			to_chat(xeno, SPAN_WARNING("You can't do that here without design nodes."))
 			return FALSE
 
 		if(!check_for_wall_or_door())
-			to_chat(X, SPAN_WARNING("This terrain is unsuitable for other resin secretions, only walls and doors can be built on this node."))
+			to_chat(xeno, SPAN_WARNING("This terrain is unsuitable for other resin secretions, only walls and doors can be built on this node."))
 			return FALSE
 
-	var/area/AR = get_area(T)
-	if(isnull(AR) || !(AR.is_resin_allowed))
-		if(!AR || AR.flags_area & AREA_UNWEEDABLE)
-			to_chat(X, SPAN_XENOWARNING("This area is unsuited to host the hive!"))
+	var/area/target_area = get_area(target_turf)
+	if(isnull(target_area) || !(target_area.is_resin_allowed))
+		if(!target_area || target_area.flags_area & AREA_UNWEEDABLE)
+			to_chat(xeno, SPAN_XENOWARNING("This area is unsuited to host the hive!"))
 			return
-		to_chat(X, SPAN_XENOWARNING("It's too early to spread the hive this far."))
+		to_chat(xeno, SPAN_XENOWARNING("It's too early to spread the hive this far."))
 		return FALSE
 
-	if(!(AR.resin_construction_allowed)) //disable resin walls not weed, in special circumstances EG. Stairs and Dropship turfs
-		to_chat(X, SPAN_WARNING("You sense this is not a suitable area for expanding the hive."))
+	if(!(target_area.resin_construction_allowed)) //disable resin walls not weed, in special circumstances EG. Stairs and Dropship turfs
+		to_chat(xeno, SPAN_WARNING("We sense this is not a suitable area for expanding the hive."))
 		return FALSE
 
-	var/obj/effect/alien/weeds/alien_weeds = locate() in T
+	var/obj/effect/alien/weeds/alien_weeds = locate() in target_turf
 	if(!alien_weeds)
-		to_chat(X, SPAN_WARNING("You can only shape on weeds. Find some resin before you start building!"))
+		to_chat(xeno, SPAN_WARNING("You can only shape on weeds. Find some resin before you start building!"))
 		return FALSE
 
 	if(alien_weeds?.block_structures >= BLOCK_ALL_STRUCTURES)
-		to_chat(X, SPAN_WARNING("\The [alien_weeds] block the construction of any structures!"))
+		to_chat(xeno, SPAN_WARNING("[alien_weeds] block the construction of any structures!"))
 		return FALSE
 
-	var/obj/vehicle/V = locate() in T
-	if(V)
-		to_chat(X, SPAN_WARNING("You cannot build under \the [V]!"))
+	var/obj/vehicle/vehicle = locate() in target_turf
+	if(vehicle)
+		to_chat(xeno, SPAN_WARNING("You cannot build under \the [vehicle]!"))
 		return FALSE
 
-	if(alien_weeds.linked_hive.hivenumber != X.hivenumber)
-		to_chat(X, SPAN_WARNING("These weeds do not belong to your hive!"))
+	if(alien_weeds.linked_hive.hivenumber != xeno.hivenumber)
+		to_chat(xeno, SPAN_WARNING("These weeds do not belong to your hive!"))
 		return FALSE
 
-	if(istype(T, /turf/closed/wall)) // Can't build in walls with no density
-		to_chat(X, SPAN_WARNING("This area is too unstable to support a construction."))
+	if(istype(target_turf, /turf/closed/wall)) // Can't build in walls with no density
+		to_chat(xeno, SPAN_WARNING("This area is too unstable to support a construction"))
 		return FALSE
 
-	if(!X.check_alien_construction(T, check_doors = !can_build_on_doors))
+	if(!xeno.check_alien_construction(target_turf, check_doors = !can_build_on_doors))
 		return FALSE
 
 	if(range_between_constructions)
-		for(var/i in long_range(range_between_constructions, T))
-			var/atom/A = i
-			if(A.type == build_path)
-				to_chat(X, SPAN_WARNING("This is too close to another similar structure!"))
+		for(var/i in long_range(range_between_constructions, target_turf))
+			var/atom/target_atom = i
+			if(target_atom.type == build_path)
+				to_chat(xeno, SPAN_WARNING("This is too close to another similar structure!"))
 				return FALSE
 
 	return TRUE
@@ -120,7 +120,7 @@
 	build_turf.place_on_top(path)
 
 	var/turf/closed/wall/resin/resin_wall = build_turf
-	if (istype(resin_wall) && pass_hivenumber)
+	if(istype(resin_wall) && pass_hivenumber)
 		resin_wall.hivenumber = hivenumber
 		resin_wall.set_resin_builder(builder)
 		set_hive_data(resin_wall, hivenumber)
@@ -216,23 +216,23 @@
 	build_path = /obj/structure/mineral_door/resin
 	build_animation_effect = /obj/effect/resin_construct/door
 
-/datum/resin_construction/resin_obj/door/can_build_here(turf/T, mob/living/carbon/xenomorph/X)
-	if (!..())
+/datum/resin_construction/resin_obj/door/can_build_here(turf/target_turf, mob/living/carbon/xenomorph/xeno)
+	if(!..())
 		return FALSE
 
 	var/wall_support = FALSE
-	for(var/D in GLOB.cardinals)
-		var/turf/CT = get_step(T, D)
-		if(CT)
-			if(CT.density)
+	for(var/dir in GLOB.cardinals)
+		var/turf/cardinal_turf = get_step(target_turf, dir)
+		if(cardinal_turf)
+			if(cardinal_turf.density)
 				wall_support = TRUE
 				break
-			else if(locate(/obj/structure/mineral_door/resin) in CT)
+			else if(locate(/obj/structure/mineral_door/resin) in cardinal_turf)
 				wall_support = TRUE
 				break
 
 	if(!wall_support)
-		to_chat(X, SPAN_WARNING("Resin doors need a wall or resin door next to them to stand up."))
+		to_chat(xeno, SPAN_WARNING("Resin doors need a wall or resin door next to them to stand up."))
 		return FALSE
 
 	return TRUE
