@@ -225,12 +225,10 @@
 	if(!anchored)
 		return FALSE
 
-	if(ismob(attacker))
-		var/mob/mob = attacker
-		if(istype(mob, /mob/living/carbon/xenomorph))
-			var/mob/living/carbon/xenomorph/xeno = mob
-			if(xeno.strain && istype(xeno.strain, /datum/xeno_strain/shielder))
-				return prob(25) //Shielder can attack trough wired cade with 75% chance.
+	if(isxeno(attacker))
+		var/mob/living/carbon/xenomorph/xeno = attacker
+		if(xeno.strain && istype(xeno.strain, /datum/xeno_strain/shielder))
+			return prob(25) //Shielder can attack trough wired cade with 75% chance.
 
 	return prob(max(30,(100.0*health)/maxhealth))
 
