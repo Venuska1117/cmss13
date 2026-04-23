@@ -178,7 +178,7 @@
 	if(istype(atom_movable, /mob/living/carbon/xenomorph/crusher))
 		var/mob/living/carbon/xenomorph/crusher/living_carbon = atom_movable
 
-		if (!living_carbon.throwing)
+		if(!living_carbon.throwing)
 			return
 
 		if(crusher_resistant)
