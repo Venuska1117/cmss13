@@ -80,9 +80,7 @@
 	var/lunging = FALSE // whether or not the warrior is currently lunging (holding) a target
 
 /mob/living/carbon/xenomorph/warrior/handle_special_state()
-	if(HAS_TRAIT(src, TRAIT_ABILITY_ENCLOSED_PLATES))
-		return TRUE
-	return FALSE
+	return HAS_TRAIT(src, TRAIT_ABILITY_ENCLOSED_PLATES)
 
 /mob/living/carbon/xenomorph/warrior/handle_special_wound_states(severity)
 	if(HAS_TRAIT(src, TRAIT_ABILITY_ENCLOSED_PLATES))

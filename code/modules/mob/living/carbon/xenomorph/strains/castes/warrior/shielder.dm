@@ -99,19 +99,6 @@
 
 	if(HAS_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES))
 		REMOVE_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES, TRAIT_SOURCE_ABILITY("enclosed_plates"))
-	else
-		ADD_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES, TRAIT_SOURCE_ABILITY("enclosed_plates"))
-
-	if(HAS_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES))
-		to_chat(xeno_player, SPAN_XENOWARNING("We raise our plates and form a shield."))
-		RegisterSignal(owner, COMSIG_XENO_PRE_CALCULATE_ARMOURED_DAMAGE_PROJECTILE, PROC_REF(check_directional_armor))
-		xeno_player.ability_speed_modifier += speed_debuff
-		xeno_player.mob_size = MOB_SIZE_BIG //knockback immune
-		button.icon_state = "template_active"
-		xeno_player.front_armor += SHIELDER_FRONT_ARMOR
-		xeno_player.side_armor += SHIELDER_SIDE_ARMOR
-		xeno_player.update_icons()
-	else
 		to_chat(xeno_player, SPAN_XENOWARNING("We lower our plates."))
 		UnregisterSignal(owner, COMSIG_XENO_PRE_CALCULATE_ARMOURED_DAMAGE_PROJECTILE, PROC_REF(check_directional_armor))
 		xeno_player.ability_speed_modifier -= speed_debuff
@@ -119,10 +106,20 @@
 		button.icon_state = "template"
 		xeno_player.front_armor -= SHIELDER_FRONT_ARMOR
 		xeno_player.side_armor -= SHIELDER_SIDE_ARMOR
-		xeno_player.update_icons()
 
 		if(HAS_TRAIT(xeno_player, TRAIT_ABILITY_PLATE_SLAM))
 			end_plate_slam()
+	else
+		ADD_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES, TRAIT_SOURCE_ABILITY("enclosed_plates"))
+		to_chat(xeno_player, SPAN_XENOWARNING("We raise our plates and form a shield."))
+		RegisterSignal(owner, COMSIG_XENO_PRE_CALCULATE_ARMOURED_DAMAGE_PROJECTILE, PROC_REF(check_directional_armor))
+		xeno_player.ability_speed_modifier += speed_debuff
+		xeno_player.mob_size = MOB_SIZE_BIG //knockback immune
+		button.icon_state = "template_active"
+		xeno_player.front_armor += SHIELDER_FRONT_ARMOR
+		xeno_player.side_armor += SHIELDER_SIDE_ARMOR
+
+	xeno_player.update_icons()
 
 	apply_cooldown()
 	return ..()
@@ -132,11 +129,11 @@
 	var/projectile_direction = damagedata["direction"]
 	if(xeno_player.dir & REVERSE_DIR(projectile_direction))
 		damagedata["armor"] += xeno_player.front_armor
-	else
-		for(var/side_direction in get_perpen_dir(xeno_player.dir))
-			if(projectile_direction == side_direction)
-				damagedata["armor"] += xeno_player.side_armor
-				return
+		return
+	for(var/side_direction in get_perpen_dir(xeno_player.dir))
+		if(projectile_direction == side_direction)
+			damagedata["armor"] += xeno_player.side_armor
+			return
 
 //
 // 2nd ability
@@ -348,7 +345,7 @@
 	ADD_TRAIT(carbon_target, TRAIT_ABILITY_PLATE_SLAM, TRAIT_SOURCE_ABILITY("plate_slam"))
 
 	var/datum/behavior_delegate/warrior_shielder/behavior = xeno_player.behavior_delegate
-	behavior.plate_slam_target = carbon_target
+	behavior.plate_slam_target = WEAKREF(carbon_target)
 
 	if(carbon_target.body_position != LYING_DOWN)
 		shield_slam_timer_id = addtimer(CALLBACK(src, PROC_REF(end_plate_slam)), 7 SECONDS, TIMER_STOPPABLE)
@@ -373,7 +370,7 @@
 		return
 
 	var/datum/behavior_delegate/warrior_shielder/behavior = xeno_player.behavior_delegate
-	target = behavior.plate_slam_target
+	target = behavior.plate_slam_target.resolve()
 
 	target.anchored = FALSE
 	REMOVE_TRAIT(target, TRAIT_IMMOBILIZED, TRAIT_SOURCE_ABILITY("plate_slam"))
@@ -383,8 +380,6 @@
 	xeno_player.anchored = FALSE
 	REMOVE_TRAIT(xeno_player, TRAIT_IMMOBILIZED, TRAIT_SOURCE_ABILITY("plate_slam"))
 	REMOVE_TRAIT(xeno_player, TRAIT_ABILITY_PLATE_SLAM, TRAIT_SOURCE_ABILITY("plate_slam"))
-
-	target = behavior.plate_slam_target.resolve()
 
 //
 // 5th ability
