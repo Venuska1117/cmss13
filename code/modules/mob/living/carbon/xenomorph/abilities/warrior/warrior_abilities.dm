@@ -85,6 +85,9 @@
 	plasma_cost = 80
 	xeno_cooldown = 20 SECONDS
 
+	/// Shield slam addtimer ID (for deletion)
+	var/shield_slam_timer_id = TIMER_ID_NULL
+
 /datum/action/xeno_action/onclick/reflective_shield
 	name = "Reflective Shield"
 	action_icon_state = "fortify"
@@ -99,4 +102,3 @@
 		/datum/action/xeno_action/activable/plate_slam,
 	)
 	var/cooldown_duration = 13 SECONDS
-

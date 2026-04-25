@@ -35,7 +35,7 @@
 
 #define SHIELDER_FRONT_ARMOR 10
 #define SHIELDER_SIDE_ARMOR 5
-#define SHIELDER_GRENADE_SWEEP 2
+#define SHIELDER_GRENADE_SWEEP_THROW 2
 #define SHIELDER_REFLECTION_DURATION 10 SECONDS
 #define SHIELDER_REFLECTION_BASE_CHANCE 80
 #define SHIELDER_SIDE_REFLECTION_PROCENTAGE 0.8
@@ -46,12 +46,19 @@
 	name = "Shielder Warrior Behavior Delegate"
 
 	var/frontal_armor = SHIELDER_FRONT_ARMOR
-	var/side_armor = SHIELDER_SIDE_ARMOR
+	var/sided_armor = SHIELDER_SIDE_ARMOR
+
+	/// Chance to reflect projectile when hit while reflective shield is active.
+	var/reflective_shield_chance = 0
+	/// check if reflective shield is active.
+	var/reflective_shield_active = FALSE
+	/// Store target of plate slam ability.
+	var/datum/weakref/plate_slam_target = null
 
 /datum/behavior_delegate/warrior_shielder/append_to_stat()
 	. = list()
-	. += "Front Armor: +[frontal_armor + bound_xeno.front_plates]"
-	. += "Side Armor: +[side_armor + bound_xeno.side_plates]"
+	. += "Front Armor: +[frontal_armor + bound_xeno.front_armor]"
+	. += "Side Armor: +[sided_armor + bound_xeno.side_armor]"
 
 /datum/behavior_delegate/warrior_shielder/add_to_xeno()
 	RegisterSignal(bound_xeno, COMSIG_XENO_PRE_CALCULATE_ARMOURED_DAMAGE_PROJECTILE, PROC_REF(apply_directional_armor))
@@ -64,16 +71,20 @@
 	else
 		for(var/side_direction in get_perpen_dir(xeno_player.dir))
 			if(projectile_direction == side_direction)
-				damagedata["armor"] += side_armor
+				damagedata["armor"] += sided_armor
 				return
 
 /datum/behavior_delegate/warrior_shielder/on_update_icons()
 	if(bound_xeno.stat == DEAD)
 		return
 
-	if(bound_xeno.enclosed_plates && bound_xeno.health > 0)
+	if(HAS_TRAIT(bound_xeno, TRAIT_ABILITY_ENCLOSED_PLATES) && bound_xeno.health > 0)
 		bound_xeno.icon_state = "[bound_xeno.get_strain_icon()] Warrior Shield"
 		return TRUE
+
+/datum/behavior_delegate/warrior_shielder/handle_death()
+	var/datum/action/xeno_action/activable/plate_slam/ability_used = get_action(bound_xeno, /datum/action/xeno_action/activable/plate_slam)
+	ability_used.end_plate_slam()
 
 //
 // 1st ability
@@ -86,16 +97,19 @@
 
 	XENO_ACTION_CHECK(xeno_player)
 
-	xeno_player.enclosed_plates = !xeno_player.enclosed_plates
+	if(HAS_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES))
+		REMOVE_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES, TRAIT_SOURCE_ABILITY("enclosed_plates"))
+	else
+		ADD_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES, TRAIT_SOURCE_ABILITY("enclosed_plates"))
 
-	if(xeno_player.enclosed_plates)
+	if(HAS_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES))
 		to_chat(xeno_player, SPAN_XENOWARNING("We raise our plates and form a shield."))
 		RegisterSignal(owner, COMSIG_XENO_PRE_CALCULATE_ARMOURED_DAMAGE_PROJECTILE, PROC_REF(check_directional_armor))
 		xeno_player.ability_speed_modifier += speed_debuff
 		xeno_player.mob_size = MOB_SIZE_BIG //knockback immune
 		button.icon_state = "template_active"
-		xeno_player.front_plates += SHIELDER_FRONT_ARMOR
-		xeno_player.side_plates += SHIELDER_SIDE_ARMOR
+		xeno_player.front_armor += SHIELDER_FRONT_ARMOR
+		xeno_player.side_armor += SHIELDER_SIDE_ARMOR
 		xeno_player.update_icons()
 	else
 		to_chat(xeno_player, SPAN_XENOWARNING("We lower our plates."))
@@ -103,11 +117,11 @@
 		xeno_player.ability_speed_modifier -= speed_debuff
 		xeno_player.mob_size = MOB_SIZE_XENO //no longer knockback immune
 		button.icon_state = "template"
-		xeno_player.front_plates -= SHIELDER_FRONT_ARMOR
-		xeno_player.side_plates -= SHIELDER_SIDE_ARMOR
+		xeno_player.front_armor -= SHIELDER_FRONT_ARMOR
+		xeno_player.side_armor -= SHIELDER_SIDE_ARMOR
 		xeno_player.update_icons()
 
-		if(xeno_player.plate_slam_target)
+		if(HAS_TRAIT(xeno_player, TRAIT_ABILITY_PLATE_SLAM))
 			end_plate_slam()
 
 	apply_cooldown()
@@ -117,11 +131,11 @@
 	SIGNAL_HANDLER
 	var/projectile_direction = damagedata["direction"]
 	if(xeno_player.dir & REVERSE_DIR(projectile_direction))
-		damagedata["armor"] += xeno_player.front_plates
+		damagedata["armor"] += xeno_player.front_armor
 	else
 		for(var/side_direction in get_perpen_dir(xeno_player.dir))
 			if(projectile_direction == side_direction)
-				damagedata["armor"] += xeno_player.side_plates
+				damagedata["armor"] += xeno_player.side_armor
 				return
 
 //
@@ -139,7 +153,7 @@
 
 	XENO_ACTION_CHECK_USE_PLASMA(xeno_player)
 
-	if(xeno_player.plate_slam)
+	if(HAS_TRAIT(xeno_player, TRAIT_ABILITY_PLATE_SLAM))
 		xeno_player.balloon_alert(xeno_player, "we need to stop pinning down the target!", text_color = "#7d32bb", delay = 1 SECONDS)
 		return
 
@@ -152,7 +166,7 @@
 	if(distance > max_distance)
 		return
 
-	if(!xeno_player.enclosed_plates)
+	if(!HAS_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES))
 		xeno_player.throw_atom(get_step_towards(carbon_target, xeno_player), 2, SPEED_SLOW, xeno_player, tracking=TRUE)
 	if(!xeno_player.Adjacent(carbon_target))
 		on_cooldown_end()
@@ -161,7 +175,7 @@
 	carbon_target.last_damage_data = create_cause_data(xeno_player.caste_type, xeno_player)
 	var/facing = get_dir(xeno_player, carbon_target)
 
-	if(xeno_player.enclosed_plates)
+	if(HAS_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES))
 		xeno_player.throw_carbon(carbon_target, facing, 3, SPEED_VERY_FAST, shake_camera = TRUE, immobilize = TRUE)
 		carbon_target.KnockDown(1)
 		xeno_cooldown *= 2
@@ -190,7 +204,7 @@
 /datum/action/xeno_action/onclick/tail_swing/use_ability(atom/A)
 	var/mob/living/carbon/xenomorph/xeno_player = owner
 
-	if(xeno_player.enclosed_plates)
+	if(HAS_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES))
 		xeno_player.balloon_alert(xeno_player, "we need to loosen our plates!", text_color = "#7d32bb", delay = 1 SECONDS)
 		return
 
@@ -226,9 +240,9 @@
 	for(var/obj/item/explosive/grenade/grenade in orange(swing_range, get_turf(xeno_player)))
 		hit_grenade = TRUE
 		var/direction = get_dir(xeno_player, grenade)
-		var/turf/target_destination = get_ranged_target_turf(grenade, direction, SHIELDER_GRENADE_SWEEP)
+		var/turf/target_destination = get_ranged_target_turf(grenade, direction, SHIELDER_GRENADE_SWEEP_THROW)
 		if(target_destination)
-			grenade.throw_atom(target_destination, SHIELDER_GRENADE_SWEEP, SPEED_FAST, grenade)
+			grenade.throw_atom(target_destination, SHIELDER_GRENADE_SWEEP_THROW, SPEED_FAST, grenade)
 			playsound(xeno_player,'sound/effects/grenade_hit.ogg', 50, 1)
 
 	if(hit_grenade && !hit_enemy)
@@ -254,11 +268,15 @@
 		to_chat(xeno_player, SPAN_DANGER("We need a target!"))
 		return
 
-	if(xeno_player.plate_slam_target)
-		if(xeno_player.plate_slam_target == carbon_target)
-			end_plate_slam(carbon_target)
+	if(HAS_TRAIT(xeno_player, TRAIT_ABILITY_PLATE_SLAM))
+		if(HAS_TRAIT(carbon_target, TRAIT_ABILITY_PLATE_SLAM))
+			end_plate_slam()
 			return
 		to_chat(xeno_player, SPAN_DANGER("We are already pinning down our target!"))
+		return
+
+	if(HAS_TRAIT(carbon_target, TRAIT_ABILITY_PLATE_SLAM))
+		to_chat(xeno_player, SPAN_DANGER("This target is already pinned down!"))
 		return
 
 	if(get_dist(xeno_player, carbon_target) > 1)
@@ -270,7 +288,7 @@
 	if(carbon_target.stat == DEAD)
 		return
 
-	if(!xeno_player.enclosed_plates)
+	if(!HAS_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES))
 		xeno_player.balloon_alert(xeno_player, "we need to tense up our plates!", text_color = "#7d32bb", delay = 1 SECONDS)
 		return
 
@@ -288,6 +306,10 @@
 		apply_custom_cooldown()
 		return
 
+	if(HAS_TRAIT(carbon_target, TRAIT_ABILITY_PLATE_SLAM))
+		to_chat(xeno_player, SPAN_DANGER("This target is already pinned down!"))
+		return
+
 	if(get_dist(xeno_player, carbon_target) > 1)
 		to_chat(xeno_player, SPAN_DANGER("We miss our target!"))
 		to_chat(carbon_target, SPAN_DANGER("You slip past the shield of plates as they smash into the ground beside you!"))
@@ -296,7 +318,7 @@
 		apply_custom_cooldown()
 		return
 
-	if(!xeno_player.enclosed_plates)
+	if(!HAS_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES))
 		xeno_player.balloon_alert(xeno_player, "we need to keep our plates tensed up!", text_color = "#7d32bb", delay = 1 SECONDS)
 		return
 
@@ -322,16 +344,19 @@
 	ADD_TRAIT(carbon_target, TRAIT_FLOORED, TRAIT_SOURCE_ABILITY("plate_slam"))
 	ADD_TRAIT(xeno_player, TRAIT_IMMOBILIZED, TRAIT_SOURCE_ABILITY("plate_slam"))
 
-	xeno_player.plate_slam = TRUE
-	xeno_player.plate_slam_target = carbon_target
+	ADD_TRAIT(xeno_player, TRAIT_ABILITY_PLATE_SLAM, TRAIT_SOURCE_ABILITY("plate_slam"))
+	ADD_TRAIT(carbon_target, TRAIT_ABILITY_PLATE_SLAM, TRAIT_SOURCE_ABILITY("plate_slam"))
+
+	var/datum/behavior_delegate/warrior_shielder/behavior = xeno_player.behavior_delegate
+	behavior.plate_slam_target = carbon_target
 
 	if(carbon_target.body_position != LYING_DOWN)
-		xeno_player.shield_slam_timer_id = addtimer(CALLBACK(src, PROC_REF(end_plate_slam)), 7 SECONDS, TIMER_STOPPABLE)
+		shield_slam_timer_id = addtimer(CALLBACK(src, PROC_REF(end_plate_slam)), 7 SECONDS, TIMER_STOPPABLE)
 		xeno_player.visible_message(SPAN_XENODANGER("[xeno_player] bashes [carbon_target] down!"), SPAN_XENODANGER("We bash [carbon_target] down and pin them with our plates!"))
 		carbon_target.apply_effect(1, WEAKEN)
 		playsound(xeno_player, 'sound/effects/hit_kick.ogg', 35, 1)
 	else
-		xeno_player.shield_slam_timer_id = addtimer(CALLBACK(src, PROC_REF(end_plate_slam)), 10 SECONDS, TIMER_STOPPABLE)
+		shield_slam_timer_id = addtimer(CALLBACK(src, PROC_REF(end_plate_slam)), 10 SECONDS, TIMER_STOPPABLE)
 		xeno_player.visible_message(SPAN_XENODANGER("[xeno_player] pins [carbon_target] down!"), SPAN_XENODANGER("We pin [carbon_target] down with our plates!"))
 
 	to_chat(carbon_target, SPAN_DANGER("You are slammed to the ground and pinned down by armored plates!"))
@@ -347,17 +372,19 @@
 	if(!istype(xeno_player))
 		return
 
-	var/mob/living/carbon/target = xeno_player.plate_slam_target
+	var/datum/behavior_delegate/warrior_shielder/behavior = xeno_player.behavior_delegate
+	target = behavior.plate_slam_target
 
 	target.anchored = FALSE
 	REMOVE_TRAIT(target, TRAIT_IMMOBILIZED, TRAIT_SOURCE_ABILITY("plate_slam"))
 	REMOVE_TRAIT(target, TRAIT_FLOORED, TRAIT_SOURCE_ABILITY("plate_slam"))
+	REMOVE_TRAIT(target, TRAIT_ABILITY_PLATE_SLAM, TRAIT_SOURCE_ABILITY("plate_slam"))
 
 	xeno_player.anchored = FALSE
 	REMOVE_TRAIT(xeno_player, TRAIT_IMMOBILIZED, TRAIT_SOURCE_ABILITY("plate_slam"))
+	REMOVE_TRAIT(xeno_player, TRAIT_ABILITY_PLATE_SLAM, TRAIT_SOURCE_ABILITY("plate_slam"))
 
-	xeno_player.plate_slam = FALSE
-	xeno_player.plate_slam_target = null
+	target = behavior.plate_slam_target.resolve()
 
 //
 // 5th ability
@@ -370,7 +397,7 @@
 	if(!action_cooldown_check())
 		return
 
-	if(!xeno_player.enclosed_plates)
+	if(!HAS_TRAIT(xeno_player, TRAIT_ABILITY_ENCLOSED_PLATES))
 		xeno_player.balloon_alert(xeno_player, "we need to tense up our plates!", text_color = "#7d32bb", delay = 1 SECONDS)
 		return
 
@@ -387,11 +414,13 @@
 	return ..()
 
 /mob/living/carbon/xenomorph/proc/activate_reflective_shield(duration, chance)
-	if(reflective_shield_active)
+	var/datum/behavior_delegate/warrior_shielder/behavior = src.behavior_delegate
+
+	if(behavior.reflective_shield_active)
 		return
 
-	reflective_shield_active = TRUE
-	reflective_shield_chance = chance
+	behavior.reflective_shield_active = TRUE
+	behavior.reflective_shield_chance = chance
 
 	src.add_filter("reflective_shield", 1, list("type" = "outline", "color" = "#2b8080", "size" = 1))
 	to_chat(src, SPAN_XENOWARNING("We adjust our plates and get ready for incoming attacks!"))
@@ -400,23 +429,27 @@
 	addtimer(CALLBACK(src, PROC_REF(remove_reflective_shield)), duration)
 
 /mob/living/carbon/xenomorph/proc/remove_reflective_shield()
-	if(!reflective_shield_active)
+	var/datum/behavior_delegate/warrior_shielder/behavior = src.behavior_delegate
+
+	if(!behavior.reflective_shield_active)
 		return
 
-	reflective_shield_active = FALSE
-	reflective_shield_chance = 0
+	behavior.reflective_shield_active = FALSE
+	behavior.reflective_shield_chance = 0
 
 	src.remove_filter("reflective_shield")
 	to_chat(src, SPAN_XENOWARNING("We adjust our plates and stance back to normal."))
 
 /mob/living/carbon/xenomorph/proc/get_reflection_chance(obj/projectile/bullet)
-	if(!reflective_shield_active)
+	var/datum/behavior_delegate/warrior_shielder/behavior = src.behavior_delegate
+
+	if(!behavior.reflective_shield_active)
 		return 0
 
 	if((bullet.ammo.flags_ammo_behavior & ARMOR_PENETRATION_TIER_10) || (bullet.ammo.flags_ammo_behavior & AMMO_ROCKET))
 		return //we don't want to reflect wall penetrating bullets or rockets.
 
-	var/base_chance = reflective_shield_chance
+	var/base_chance = behavior.reflective_shield_chance
 	var/projectile_dir = 0
 
 	if(!bullet.firer)
