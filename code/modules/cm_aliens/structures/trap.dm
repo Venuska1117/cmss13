@@ -272,9 +272,10 @@
 		trigger_trap()
 	..()
 
-/obj/effect/alien/resin/trap/Crossed(atom/atom)
-	if(ismob(atom) || isVehicleMultitile(atom))
-		HasProximity(atom)
+/obj/effect/alien/resin/trap/Crossed(atom/target_atom)
+	..()
+	if(ismob(target_atom) || isVehicleMultitile(target_atom))
+		HasProximity(target_atom)
 
 /obj/effect/alien/resin/trap/Destroy()
 	QDEL_NULL_LIST(tripwires)
@@ -294,7 +295,8 @@
 		linked_trap = null
 	. = ..()
 
-/obj/effect/trap_tripwire/Crossed(atom/atom)
+/obj/effect/trap_tripwire/Crossed(atom/target_atom)
+	..()
 	if(!linked_trap)
 		qdel(src)
 		return
@@ -303,5 +305,5 @@
 		qdel(src)
 		return
 
-	if(ishuman(atom) || isxeno(atom) || isVehicleMultitile(atom))
-		linked_trap.HasProximity(atom)
+	if(ishuman(target_atom) || isxeno(target_atom) || isVehicleMultitile(target_atom))
+		linked_trap.HasProximity(target_atom)

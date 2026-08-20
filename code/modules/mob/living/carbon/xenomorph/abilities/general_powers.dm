@@ -110,17 +110,21 @@
 		to_chat(src, SPAN_WARNING("We cannot rest while our crest is down!"))
 		return
 
+	if(HAS_TRAIT(src, TRAIT_ABILITY_ENCLOSED_PLATES))
+		to_chat(src, SPAN_WARNING("We cannot rest when we are encased in plates!"))
+		return
+
 	return ..()
 
 /mob/living/carbon/xenomorph/set_lying_down()
-	if(selected_ability && selected_ability.ability_uses_acid_overlay)
+	if(selected_ability?.ability_uses_acid_overlay)
 		overlays -= acid_overlay
 
 	return ..()
 
 /mob/living/carbon/xenomorph/get_up()
-	if(selected_ability && selected_ability.ability_uses_acid_overlay && !(acid_overlay in overlays))
-		overlays += acid_overlay
+	if(selected_ability?.ability_uses_acid_overlay)
+		overlays |= acid_overlay
 
 	return ..()
 
@@ -250,7 +254,7 @@
 	if(to_chat)
 		to_chat(usr, SPAN_NOTICE("We will now build <b>[resin_construction.construction_name]\s</b> when secreting resin."))
 	button.overlays.Cut()
-	button.overlays += image('icons/mob/hud/actions_xeno.dmi', button, resin_construction.construction_name)
+	button.overlays += image('icons/mob/hud/xeno_building.dmi', button, resin_construction.construction_name)
 
 // Resin
 /datum/action/xeno_action/activable/secrete_resin/use_ability(atom/target)
@@ -312,24 +316,24 @@
 
 	var/tally = 0
 
-	for(var/obj/effect/alien/resin/marker/hive_marker in xeno.hive.resin_marks)
-		if(hive_marker.createdby == xeno.nicknumber)
+	for(var/obj/effect/alien/resin/marker/MRK in xeno.hive.resin_marks)
+		if(MRK.createdby == xeno.nicknumber)
 			tally++
 	if(tally >= max_markers)
 		to_chat(xeno, SPAN_XENOWARNING("We have reached the maximum number of resin marks."))
 		var/list/promptlist = list("Yes", "No")
-		var/obj/effect/alien/resin/marker/goober = null
+		var/obj/effect/alien/resin/marker/Goober = null
 		var/promptuser = null
 		for(var/i=1, i<=length(xeno.hive.resin_marks))
-			goober = xeno.hive.resin_marks[i]
-			if(goober.createdby == xeno.nicknumber)
-				promptuser = tgui_input_list(xeno, "Remove oldest placed mark: '[goober.mark_meaning.name]!'?", "Mark limit reached.", promptlist, theme="hive_status")
+			Goober = xeno.hive.resin_marks[i]
+			if(Goober.createdby == xeno.nicknumber)
+				promptuser = tgui_input_list(xeno, "Remove oldest placed mark: '[Goober.mark_meaning.name]!'?", "Mark limit reached.", promptlist, theme="hive_status")
 				break
 			i++
 		if(promptuser == "No")
 			return
 		else if(promptuser == "Yes")
-			qdel(goober)
+			qdel(Goober)
 			if(xeno.make_marker(target_turf))
 				apply_cooldown()
 				return TRUE
@@ -587,6 +591,9 @@
 	if(activation_delay)
 		if(!do_after(xeno, activation_delay_length, INTERRUPT_NO_NEEDHAND, BUSY_ICON_HOSTILE))
 			to_chat(xeno, SPAN_XENOWARNING("We decide to cancel our acid spray."))
+	if (activation_delay)
+		if(!do_after(xeno, activation_delay_length, INTERRUPT_NO_NEEDHAND, BUSY_ICON_HOSTILE))
+			to_chat(xeno, SPAN_XENOWARNING("We decide to cancel our acid spray."))
 			end_cooldown()
 			return
 
@@ -604,10 +611,12 @@
 	apply_cooldown()
 
 	// Build our list of target turfs based on
-	if(spray_type == ACID_SPRAY_LINE)
+	if (spray_type == ACID_SPRAY_LINE)
 		xeno.do_acid_spray_line(get_line(xeno, atom, include_start_atom = FALSE), spray_effect_type, spray_distance)
 
 	else if(spray_type == ACID_SPRAY_CONE)
+		xeno.do_acid_spray_cone(get_turf(atom), spray_effect_type, spray_distance)
+	else if (spray_type == ACID_SPRAY_CONE)
 		xeno.do_acid_spray_cone(get_turf(atom), spray_effect_type, spray_distance)
 
 	return ..()
@@ -638,6 +647,53 @@
 	SIGNAL_HANDLER
 	if(!QDELETED(source) && (new_stat >= UNCONSCIOUS && old_stat <= UNCONSCIOUS))
 		post_attack()
+
+/datum/action/xeno_action/onclick/place_trap/use_ability(atom/target)
+	var/mob/living/carbon/xenomorph/xeno = owner
+	if(!xeno.check_state())
+		return
+
+	if(HAS_TRAIT(xeno, TRAIT_ABILITY_BURROWED))
+		return
+
+	var/turf/turf = get_turf(xeno)
+	if(!istype(turf))
+		to_chat(xeno, SPAN_XENOWARNING("We can't do that here."))
+		return
+	var/area/area = turf.loc
+	if(!area?.is_resin_allowed)
+		if(!area || area.flags_area & AREA_UNWEEDABLE)
+			to_chat(xeno, SPAN_XENOWARNING("We sense this is not a suitable area for creating a resin hole."))
+			return
+		to_chat(xeno, SPAN_XENOWARNING("It's too early to spread the hive this far."))
+		return
+	if(istype(area,/area/shuttle/drop1/lz1) || istype(area,/area/shuttle/drop2/lz2) || SSinterior.in_interior(owner))
+		to_chat(xeno, SPAN_WARNING("We sense this is not a suitable area for creating a resin hole."))
+		return
+	var/obj/effect/alien/weeds/alien_weeds = turf.check_xeno_trap_placement(xeno)
+	if(!alien_weeds)
+		return
+
+	if(istype(alien_weeds, /obj/effect/alien/weeds/node))
+		to_chat(xeno, SPAN_NOTICE("We start uprooting the node so we can put the resin hole in its place..."))
+		if(!do_after(xeno, 1 SECONDS, INTERRUPT_ALL, BUSY_ICON_GENERIC, target, INTERRUPT_ALL))
+			return
+		if(!turf.check_xeno_trap_placement(xeno))
+			return
+		var/obj/effect/alien/weeds/the_replacer = new /obj/effect/alien/weeds(turf)
+		the_replacer.hivenumber = xeno.hivenumber
+		the_replacer.linked_hive = xeno.hive
+		set_hive_data(the_replacer, xeno.hivenumber)
+		qdel(alien_weeds)
+
+	if(!xeno.check_plasma(plasma_cost))
+		return
+
+	xeno.use_plasma(plasma_cost)
+	playsound(xeno.loc, "alien_resin_build", 25)
+	new /obj/effect/alien/resin/trap(turf, xeno)
+	to_chat(xeno, SPAN_XENONOTICE("We place a resin hole on the weeds, it still needs a sister to fill it with acid."))
+	return ..()
 
 /turf/proc/check_xeno_trap_placement(mob/living/carbon/xenomorph/xeno)
 	if(is_weedable < FULLY_WEEDABLE || !can_xeno_build(src))
@@ -736,13 +792,14 @@
 		to_chat(xeno, SPAN_XENOWARNING("It's too early to spread the hive this far."))
 		return FALSE
 
-	if(target_turf.z != xeno.z)
+	if(!SSmapping.same_z_map(target_turf.z, xeno.z))
 		to_chat(xeno, SPAN_XENOWARNING("This area is too far away to affect!"))
 		return FALSE
 
 	if(SSinterior.in_interior(xeno))
 		to_chat(xeno, SPAN_XENOWARNING("It's too tight in here to build."))
 		return FALSE
+
 
 	if(!xeno.check_alien_construction(target_turf))
 		return FALSE
@@ -766,6 +823,7 @@
 		return FALSE
 	var/structure_type = xeno.hive.hive_structure_types[choice]
 	var/datum/construction_template/xenomorph/structure_template = new structure_type()
+
 
 	if(!spacecheck(xeno, target_turf, structure_template))
 		// spacecheck already cleans up the template
@@ -918,123 +976,6 @@
 	apply_cooldown()
 	return ..()
 
-/datum/action/xeno_action/activable/bombard/use_ability(atom/atom)
-	var/mob/living/carbon/xenomorph/xeno = owner
-
-	if(!istype(xeno) || !xeno.check_state() || !action_cooldown_check() || xeno.action_busy)
-		return FALSE
-
-	var/turf/turf = get_turf(atom)
-
-	if(isnull(turf) || istype(turf, /turf/closed) || !turf.can_bombard(owner))
-		to_chat(xeno, SPAN_XENODANGER("We can't bombard that!"))
-		return FALSE
-
-	if(!check_plasma_owner())
-		return FALSE
-
-	if(turf.z != xeno.z)
-		to_chat(xeno, SPAN_WARNING("That target is too far away!"))
-		return FALSE
-
-	var/atom/bombard_source = get_bombard_source()
-	if(!xeno.can_bombard_turf(turf, range, bombard_source))
-		return FALSE
-
-	xeno.visible_message(SPAN_XENODANGER("[xeno] digs itself into place!"), SPAN_XENODANGER("We dig ourself into place!"))
-	if(!do_after(xeno, activation_delay, interrupt_flags, BUSY_ICON_HOSTILE))
-		to_chat(xeno, SPAN_XENODANGER("We decide to cancel our bombard."))
-		return FALSE
-
-	if(!xeno.can_bombard_turf(turf, range, bombard_source)) //Second check in case something changed during the do_after.
-		return FALSE
-
-	if(!check_and_use_plasma_owner())
-		return FALSE
-
-	apply_cooldown()
-
-	xeno.visible_message(SPAN_XENODANGER("[xeno] launches a massive ball of acid at [atom]!"), SPAN_XENODANGER("You launch a massive ball of acid at [atom]!"))
-	playsound(get_turf(xeno), 'sound/effects/blobattack.ogg', 25, 1)
-
-	recursive_spread(turf, effect_range, effect_range)
-
-	return ..()
-
-/datum/action/xeno_action/activable/bombard/proc/recursive_spread(turf/turf, dist_left, orig_depth)
-	if(!istype(turf))
-		return
-	else if(dist_left == 0)
-		return
-	else if(istype(turf, /turf/closed) || istype(turf, /turf/open/space))
-		return
-	else if(!turf.can_bombard(owner))
-		return
-
-	addtimer(CALLBACK(src, PROC_REF(new_effect), turf, owner), 2*(orig_depth - dist_left))
-
-	for(var/mob/living/living in turf)
-		to_chat(living, SPAN_XENOHIGHDANGER("You see a massive ball of acid flying towards you!"))
-
-	for(var/dirn in GLOB.alldirs)
-		recursive_spread(get_step(turf, dirn), dist_left - 1, orig_depth)
-
-/datum/action/xeno_action/activable/bombard/proc/new_effect(turf/turf, mob/living/carbon/xenomorph/xeno)
-	if(!istype(turf))
-		return
-
-	if(locate(/obj/effect/xenomorph/boiler_bombard) in turf)
-		return
-
-	new effect_type(turf, xeno)
-
-/datum/action/xeno_action/activable/bombard/proc/get_bombard_source()
-	return owner
-
-/turf/proc/can_bombard(mob/bombarder)
-	if(!can_be_dissolved() && density)
-		return FALSE
-	for(var/atom/atom in src)
-		if(istype(atom, /obj/structure/machinery))
-			continue // Machinery shouldn't block boiler gas (e.g. computers)
-		if(ismob(atom))
-			continue // Mobs shouldn't block boiler gas
-
-		if(atom && atom.unacidable && atom.density && !(atom.flags_atom & ON_BORDER))
-			return FALSE
-
-	return TRUE
-
-/mob/living/carbon/xenomorph/proc/can_bombard_turf(atom/target, range = 5, atom/bombard_source) // I couldn't be arsed to do actual raycasting :I This is horribly inaccurate.
-	if(!bombard_source || !isturf(bombard_source.loc))
-		to_chat(src, SPAN_XENODANGER("That target is obstructed!"))
-		return FALSE
-	var/turf/current = bombard_source.loc
-	var/turf/target_turf = get_turf(target)
-
-	if(get_dist_sqrd(current, target_turf) > (range*range))
-		to_chat(src, SPAN_XENODANGER("That is too far away!"))
-		return
-
-	. = TRUE
-	while(current != target_turf)
-		if(!current)
-			. = FALSE
-		if(!current.can_bombard(src))
-			. = FALSE
-		if(current.opacity)
-			. = FALSE
-		if(.)
-			for(var/atom/atom in current)
-				if(atom.opacity)
-					. = FALSE
-					break
-		if(!.)
-			to_chat(src, SPAN_XENODANGER("That target is obstructed!"))
-			return
-
-		current = get_step_towards(current, target_turf)
-
 /datum/action/xeno_action/activable/tail_stab/use_ability(atom/targetted_atom)
 	var/mob/living/carbon/xenomorph/stabbing_xeno = owner
 	if(HAS_TRAIT(targetted_atom, TRAIT_HAULED))
@@ -1179,7 +1120,7 @@
 	stabbing_xeno.animation_attack_on(target)
 	stabbing_xeno.flick_attack_overlay(target, stab_overlay)
 
-	var/damage = (stabbing_xeno.melee_damage_upper + stabbing_xeno.frenzy_aura * FRENZY_DAMAGE_MULTIPLIER) * TAILSTAB_MOB_DAMAGE_MULTIPLIER
+	var/damage = (stabbing_xeno.melee_damage_upper + stabbing_xeno.frenzy_aura * FRENZY_DAMAGE_MULTIPLIER) * damage_multiplier
 
 	if(stabbing_xeno.behavior_delegate && apply_behavior_delagate)
 		stabbing_xeno.behavior_delegate.melee_attack_additional_effects_target(target)
