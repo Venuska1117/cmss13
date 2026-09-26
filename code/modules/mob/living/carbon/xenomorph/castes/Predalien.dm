@@ -280,7 +280,7 @@ You must still listen to the queen.
 			xeno.spin_circle()
 			xeno.flick_attack_overlay(target_carbon, "tail")
 
-		playsound(owner, 'sound/voice/predalien_growl.ogg', 50, 0, status = 0)
+		playsound(owner, 'sound/voice/predalien_growl.ogg', 60, 0, status = 0)
 
 		REMOVE_TRAIT(xeno, TRAIT_IMMOBILIZED, TRAIT_SOURCE_ABILITY("Devastate"))
 		xeno.anchored = FALSE

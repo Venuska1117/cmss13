@@ -878,7 +878,7 @@
 	var/decloak_timer = (DECLOAK_STANDARD * force_multiplier)
 	if(forced)
 		cloak_malfunction = world.time + decloak_timer
-		playsound(user.loc, 'sound/effects/pred_force_decloak.ogg', 75, 1, 10, falloff = 3)
+		playsound(user.loc, get_sfx("pred_decloak"), 60, 1, 10, falloff = 3)
 
 	REMOVE_TRAIT(user, TRAIT_CLOAKED, TRAIT_SOURCE_EQUIPMENT(WEAR_HANDS))
 	log_game("[key_name_admin(user)] has disabled their cloaking device.")
